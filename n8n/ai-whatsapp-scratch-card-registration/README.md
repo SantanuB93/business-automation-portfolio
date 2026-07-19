@@ -117,6 +117,10 @@ It can:
 
 ---
 
+## 📸 Workflow
+
+<img width="1164" height="290" alt="workflow-overview" src="https://github.com/user-attachments/assets/119a710b-0957-4466-9fa8-fda6624ff997" />
+
 ## 🔒 Security
 
 Sensitive information such as API credentials, authentication tokens, and production configuration has been removed before publishing.
@@ -125,7 +129,7 @@ Sensitive information such as API credentials, authentication tokens, and produc
 
 ## 🚀 Possible Improvements
 
-- Database integration (<img width="1164" height="290" alt="workflow-overview" src="https://github.com/user-attachments/assets/119a710b-0957-4466-9fa8-fda6624ff997" />L)
+- Database integration (PostgreSQL / MySQL)
 - Dashboard for campaign analytics
 - Email notifications
 - Admin portal
