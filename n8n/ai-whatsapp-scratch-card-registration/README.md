@@ -117,18 +117,6 @@ It can:
 
 ---
 
-## 📸 Workflow
-
-*(Add screenshots of the workflow here.)*
-
-Example:
-
-```
-screenshots/workflow-overview.png
-```
-
----
-
 ## 🔒 Security
 
 Sensitive information such as API credentials, authentication tokens, and production configuration has been removed before publishing.
@@ -137,7 +125,7 @@ Sensitive information such as API credentials, authentication tokens, and produc
 
 ## 🚀 Possible Improvements
 
-- Database integration (PostgreSQL / MySQL)
+- Database integration (<img width="1164" height="290" alt="workflow-overview" src="https://github.com/user-attachments/assets/119a710b-0957-4466-9fa8-fda6624ff997" />L)
 - Dashboard for campaign analytics
 - Email notifications
 - Admin portal
