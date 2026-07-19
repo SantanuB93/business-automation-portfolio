@@ -35,6 +35,10 @@ This workflow automates the complete customer registration process for a promoti
 
 ---
 
+## 🏗️ System Architecture
+
+![Architecture](docs/architecture-diagram.png)
+
 ## 🔄 Workflow Overview
 
 1. Customer sends a WhatsApp message.
