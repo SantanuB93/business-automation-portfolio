@@ -1,0 +1,1451 @@
+{
+  "name": "Scratch card campaign final",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        384
+      ],
+      "id": "ea8410bb-38fc-40cc-86aa-389ed67749aa",
+      "name": "WhatsApp Trigger",
+      "webhookId": "5db868be-1c86-41a3-84de-fbacb25161c9"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are Miracle, a concise CRM agent for ABC Company (Nigeria). The user is chatting about a Scratch & Win campaign.\n\nGOAL\nCollect exactly these THREE fields: \n• Full Name\n• State & City\n• Scratch Card Code\n\nMEMORY & PERSISTENCE\n- You have conversation memory. Always carry forward any previously provided valid values.\n- On every turn, fill all three fields with the best-known values (new input overrides memory).\n- Never blank out a field that was valid previously unless the user explicitly corrects it.\n\nRULES (follow in this order every time)\n1) Normalize inputs:\n   - Trim whitespace on all fields.\n   - Scratch Card Code: convert to UPPERCASE.\n2) Validate:\n   - 2) Validate:\n- Scratch Card Code must be exactly 8 chars, alphanumeric, with at least 1 letter and 1 digit.\n3) Compute missing:\n   - missing = array of field names that are empty or invalid after normalization/validation.\n4) Compute ready:\n   - ready = true if and only if missing.length == 0; otherwise false.\n5) Compose message:\n   - If ready == false → message = short prompt asking ONLY for the fields in `missing`. No small talk, no repeating fields we already have.\n   - If ready == true  → message = \"Thanks, your details are saved successfully.\"\n6) Consistency checks (must pass):\n   - If a field has a non-empty valid value, DO NOT include it in `missing`.\n   - If ready == true then missing MUST be [].\n   - If ready == false then missing MUST contain at least one of the three field names.\n7) Output format:\n   - Return ONLY a JSON object with EXACTLY these keys and spelling:\n     {\"message\": string, \"Full Name\": string, \"State & City\": string, \"Scratch Card Code\": string, \"missing\": array<string>, \"ready\": boolean}\n   - No extra keys, no code fences, no prose.\n\nEXAMPLES\nInput: \"Ranjan\\nKolkata\\nA2N341DF\"\nOutput:\n{\"message\":\"Thanks, your details are saved successfully.\",\"Full Name\":\"Ranjan\",\"State & City\":\"Kolkata\",\"Scratch Card Code\":\"A2N341DF\",\"missing\":[],\"ready\":true}\n\nInput: \"Santa\\n6292230831\"\nOutput:\n{\"message\":\"Please share your State & City and your 8-character scratch card code.\",\"Full Name\":\"Santa\",\"State & City\":\"\",\"Scratch Card Code\":\"\",\"missing\":[\"State & City\",\"Scratch Card Code\"],\"ready\":false}\n\nInput: \"code a2b3c4d\"   // too short + lowercase\nOutput:\n{\"message\":\"Please share your Full Name, State & City, and a valid 8-character scratch card code.\",\"Full Name\":\"\",\"State & City\":\"\",\"Scratch Card Code\":\"\",\"missing\":[\"Full Name\",\"State & City\",\"Scratch Card Code\"],\"ready\":false}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        256
+      ],
+      "id": "a9bd5380-06b5-4524-a7b2-26bee0698bca",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {
+          "maxTokens": 4000,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        496
+      ],
+      "id": "11490dad-f0a9-4c5c-9281-63d12bd51e71",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Code').item.json.senderWaId }}\n",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        496
+      ],
+      "id": "12c831b0-8ed9-4d43-9914-06d1c1e8fbe2",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "template": "scratch_card_campaign|en"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        752,
+        208
+      ],
+      "id": "e15aaf7f-97e4-4725-a97f-11290e6e4ee7",
+      "name": "Send template",
+      "webhookId": "f76457c4-7524-4087-ac24-d7a447c821aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8566016e-83cd-460b-ba56-7c37cbd365bf",
+              "leftValue": "={{ $json.messages[0].text.body }}",
+              "rightValue": "Hi, I got a scratch card and want to register myself for Family Fortune Rewards!!",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        384
+      ],
+      "id": "02f82357-2371-466c-a16f-7efae2717147",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (Node v2) — processes each incoming item and returns [{ json: ... }]\nconst items = $input.all();\nconst out = [];\n\n// ---------- Helpers ----------\nfunction isStrictCodeToken(tok){\n  // Exactly 8 alphanum, at least 1 letter AND 1 digit\n  return /^(?=[A-Za-z0-9]{8}$)(?=.*[A-Za-z])(?=.*\\d)[A-Za-z0-9]{8}$/.test(tok);\n}\nfunction findStrictCodeAnywhere(s){\n  const tokens = s.match(/[A-Za-z0-9]{4,}/g) || [];\n  return tokens.some(isStrictCodeToken);\n}\nfunction extractStrictCode(s){\n  const tokens = s.match(/[A-Za-z0-9]{6,}/g) || [];\n  for (const t of tokens) if (isStrictCodeToken(t)) return t;\n  return \"\";\n}\nfunction hasPostalCode(s){ return /\\b\\d{6}\\b/.test(s); } // kept as-is\nfunction hasVowel(s){ return /[aeiou]/i.test(s); }\nfunction isGibberish(s){\n  if (/^([a-z])\\1{2,}$/i.test(s)) return true;\n  if (/^(qwerty|asdfgh|zxcvb)$/i.test(s)) return true;\n  return false;\n}\nconst junkSingles = new Set([\n  'test','testing','demo','sample','name','fullname','yourname',\n  'abcd','abcde','xyz','qwerty','asdf','asdfg','lorem'\n]);\nfunction looksLikeSingleHumanName(s){\n  if (!/^[A-Za-z.'\\-]{3,}$/.test(s)) return false;\n  if (!hasVowel(s)) return false;\n  if (junkSingles.has(s.toLowerCase())) return false;\n  if (isGibberish(s)) return false;\n  return true;\n}\n\nconst smallTalk = new Set([\n  'hi','hello','hey','yo','ok','okay','k','thanks','thank you','tnx','👍','👌'\n]);\n\nfor (const item of items) {\n  const data = item.json || {};\n\n  // Only process items that actually contain WhatsApp message payload\n  const msgObj = data.messages?.[0];\n  const waId = data.contacts?.[0]?.wa_id || '';\n  const from = msgObj?.from || '';\n\n  if (!msgObj || !waId || from !== waId) {\n    // Not a real inbound user message — skip\n    continue;\n  }\n\n  // Pull body from multiple WhatsApp shapes\n  const body =\n    msgObj.text?.body ||\n    msgObj.button?.text ||\n    msgObj.interactive?.button_reply?.title ||\n    msgObj.interactive?.list_reply?.title ||\n    msgObj.image?.caption ||\n    '';\n\n  const text = String(body || '').trim();\n  if (!text) continue;\n\n  const lower = text.toLowerCase().trim();\n  if (smallTalk.has(lower)) continue;\n\n  // ---------- Relevance rules ----------\n  const parts = text.split(/[\\r\\n,;|]+/).map(s => s.trim()).filter(Boolean);\n  const alphaParts = parts.filter(p => /[A-Za-z]/.test(p));\n\n  const alphaWords = text.split(/\\s+/).filter(w => /[A-Za-z]{2,}/.test(w));\n  const wordish = (text.match(/[A-Za-z]{2,}/g) || []);\n  const alphaCharCount = wordish.join('').length;\n\n  const hasStrictCode = findStrictCodeAnywhere(text);\n  const relevantByPostal = hasPostalCode(text) && alphaParts.length >= 1;\n  const relevantByNameCity = (alphaWords.length >= 2 && alphaCharCount >= 6);\n\n  let relevantBySingleName = false;\n  if (!hasStrictCode && alphaParts.length === 1 && !hasPostalCode(text)) {\n    const tok = alphaParts[0];\n    if (parts.length === 1 && /^[A-Za-z.'\\- ]+$/.test(tok)) {\n      const singleWord = tok.trim().split(/\\s+/).length === 1;\n      if (singleWord && looksLikeSingleHumanName(tok)) {\n        relevantBySingleName = true;\n      }\n    }\n  }\n\n  const isPureDigits = /^\\d+$/.test(text);\n  const isShortPureDigits = isPureDigits && text.length < 6;\n  const isRelevant = hasStrictCode || relevantByPostal || relevantByNameCity || relevantBySingleName;\n  if (!isRelevant || isShortPureDigits) continue;\n\n  // ---------- Light parsing (optional, fills your fields if lines are Name / City / Code) ----------\n  let fullName = \"\";\n  let stateCity = \"\";\n  let code = extractStrictCode(text);\n\n  // Heuristic: first non-empty line with letters = name; second = city\n  // If last line is the 8-char code, keep it; otherwise leave blank\n  if (parts.length >= 1) {\n    // Find first line that looks like a name\n    const nameLine = parts.find(p => /^[A-Za-z .'\\-]{3,}$/.test(p));\n    if (nameLine) fullName = nameLine;\n  }\n  if (parts.length >= 2) {\n    // Choose a different line than name that looks like a location\n    const cityLine = parts.find(p => p !== fullName && /[A-Za-z]{2,}/.test(p));\n    if (cityLine) stateCity = cityLine;\n  }\n  // If last trimmed part is exactly the code, prefer that\n  const tail = parts[parts.length - 1] || \"\";\n  if (isStrictCodeToken(tail)) code = tail;\n\n  out.push({\n    json: {\n      senderWaId: waId,\n      text,\n      fullName,\n      stateCity,\n      code,\n    }\n  });\n}\n\n// Return array of { json: ... }\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        592
+      ],
+      "id": "34486ab9-958b-41ee-b3ed-0f2cb378706e",
+      "name": "Code",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1776,
+        560
+      ],
+      "id": "14971e43-83b4-4a1f-95a1-a8d9bafa397c",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $json.Contact }}",
+        "textBody": "={{ \"🎉 Thank you for registering for the Family Fortune Rewards! Your entry has been received successfully — get ready, exciting rewards could be coming your way!\" }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        3856,
+        464
+      ],
+      "id": "b55e1e99-9637-403f-8871-1ad0569b2c0c",
+      "name": "Confirmation Message",
+      "webhookId": "c5799907-daa0-4f1c-abd1-a84d7a8d393b"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1a7rWm5EWvaTZkt97vbu6wqESPb-EO_4IqYnJmacqhug/edit?gid=2081599863#gid=2081599863",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xA4L36d-EicUmqlsTw8SgfptHzMqjd7m4IEsUALFY10/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TimeStamp": "={{ $now.setZone('Asia/Kolkata').toFormat('dd-MM-yyyy HH:mm:ss') }}",
+            "Name": "={{ $json.fullName }}",
+            "Contact": "={{ $json.senderWaId }}",
+            "City/Locality": "={{ $json.stateCity }}",
+            "Scratch Card Code": "={{ $json.code }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "TimeStamp",
+              "displayName": "TimeStamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City/Locality",
+              "displayName": "City/Locality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Scratch Card Code",
+              "displayName": "Scratch Card Code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3712,
+        464
+      ],
+      "id": "e7ad0d80-df13-4c37-a227-42647f6ff9fd",
+      "name": "Customer DB"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $json.senderWaId }}",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        640
+      ],
+      "id": "a4ae9e2e-7c75-4bd4-a254-14f423860b8f",
+      "name": "Send message for missing info",
+      "webhookId": "2dd6be63-fdb5-421a-9cb9-fe320156ba0d"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (JavaScript)\n// Parses AI output + user's latest message to produce a stable, casing-safe form state.\n\nfunction safeParseJSON(s) {\n  if (!s || typeof s !== 'string') return null;\n  try {\n    return JSON.parse(s);\n  } catch {\n    return null;\n  }\n}\n\n// --- Helpers & reference lists ---\nconst NIGERIAN_STATES = new Set([\n  \"abia\",\"adamawa\",\"akwa ibom\",\"anambra\",\"bauchi\",\"bayelsa\",\"benue\",\"borno\",\"cross river\",\n  \"delta\",\"ebonyi\",\"edo\",\"ekiti\",\"enugu\",\"gombe\",\"imo\",\"jigawa\",\"kaduna\",\"kano\",\"katsina\",\n  \"kebbi\",\"kogi\",\"kwara\",\"lagos\",\"nasarawa\",\"niger\",\"ogun\",\"ondo\",\"osun\",\"oyo\",\"plateau\",\n  \"rivers\",\"sokoto\",\"taraba\",\"yobe\",\"zamfara\",\"fct\",\"f.c.t\",\"abuja\"\n]);\n\nfunction norm(s){ return s.trim().toLowerCase().replace(/\\s+/g,' '); }\n\n// Code must be exactly 8 chars, alphanumeric, with at least 1 letter and 1 digit\nfunction isStrictCode(s){\n  return /^(?=[A-Za-z0-9]{8}$)(?=.*[A-Za-z])(?=.*\\d)[A-Za-z0-9]{8}$/.test(s || '');\n}\n\n// Tokenize a free text into candidate chunks (preserve original casing)\nfunction splitParts(text) {\n  if (!text) return [];\n  // Split on commas, newlines, semicolons, pipes, and multiple spaces; keep words with letters/digits\n  const raw = text\n    .split(/[\\n,;|]+/g)\n    .map(s => s.trim())\n    .filter(s => s.length > 0);\n  // Also split long lines by multiple spaces but keep multi-word cities intact later\n  // We'll keep both original chunks and further space-split tokens as needed.\n  // For our heuristics, we'll first try the raw chunks, then fallback to finer splits.\n  return raw;\n}\n\n// Heuristic: does this look like a location?\nfunction looksLikeLocation(s){\n  const t = norm(s);\n  if (t.includes(',')) return true;                        // \"Rivers, Port Harcourt\"\n  if (NIGERIAN_STATES.has(t)) return true;                 // \"rivers\", \"lagos\"\n  const wordCount = t.split(' ').length;\n  if (wordCount >= 2) return true;                         // \"port harcourt\", \"ikeja lagos\"\n  return false;                                            // single unknown word → maybe name\n}\n\n// Heuristic: does this look like a person name (accept single word too)?\nfunction looksLikeName(s){\n  const t = s.trim();\n  if (isStrictCode(t)) return false;\n  // Allow letters, spaces, apostrophes, hyphens, dots; at least 2 chars\n  return /^[A-Za-z.'\\-\\s]{2,}$/.test(t);\n}\n\nfunction extractBestFromText(text, form) {\n  // Goal: fill only missing fields (do not overwrite valid existing values)\n  if (!text || !(text = text.trim())) return;\n\n  // Detect any 8-char code anywhere in the message\n  // Preserve original casing of other fields; code is case-insensitive but we keep as typed.\n  const codeMatch = text.match(/[A-Za-z0-9]{8}/g);\n  if (!form.code && codeMatch) {\n    // Choose the first token that passes strict check\n    const found = codeMatch.find(tok => isStrictCode(tok));\n    if (found) form.code = found;\n  }\n\n  // Split into candidate alpha chunks (exclude strict code tokens)\n  const rawChunks = splitParts(text);\n  const alphaChunks = rawChunks.filter(s => !isStrictCode(s));\n\n  if (alphaChunks.length === 0) return;\n\n  // If exactly one alpha chunk arrives, fill the missing field first.\n  if (alphaChunks.length === 1) {\n    const tok = alphaChunks[0];\n\n    if (!form.fullName && form.stateCity) {\n      // Have location, likely name\n      if (looksLikeName(tok)) form.fullName = tok.trim();\n      return;\n    }\n    if (!form.stateCity && form.fullName) {\n      // Have name, leftover becomes location (even single-word like \"Kano\")\n      form.stateCity = tok.trim();\n      return;\n    }\n    // Both missing → classify\n    if (!form.stateCity && looksLikeLocation(tok)) {\n      form.stateCity = tok.trim();\n      return;\n    }\n    if (!form.fullName && looksLikeName(tok)) {\n      form.fullName = tok.trim();\n      return;\n    }\n    // If still undecided, prefer name for single-word\n    if (!form.fullName) form.fullName = tok.trim();\n    return;\n  }\n\n  // If 2+ alpha chunks: pick best fits without overwriting known values\n  if (alphaChunks.length >= 2) {\n    // Prefer assigning a location first (comma or multi-word or state match)\n    for (const s of alphaChunks) {\n      if (!form.stateCity && looksLikeLocation(s)) {\n        form.stateCity = s.trim();\n        break;\n      }\n    }\n\n    // Then use the longest remaining token as name if missing\n    if (!form.fullName) {\n      const candidates = alphaChunks.filter(s => s.trim() !== form.stateCity);\n      const nameTok = candidates.sort((a,b)=>b.length-a.length)[0];\n      if (nameTok && looksLikeName(nameTok)) {\n        form.fullName = nameTok.trim();\n      } else if (nameTok) {\n        // Fallback: still use it as name to avoid stalling\n        form.fullName = nameTok.trim();\n      }\n    }\n  }\n}\n\nfunction computeMissing(form) {\n  const missing = [];\n  if (!form.fullName || !looksLikeName(form.fullName)) missing.push('Full Name');\n  if (!form.stateCity || form.stateCity.trim().length < 2) missing.push('State & City');\n  if (!form.code || !isStrictCode(form.code)) missing.push('Scratch Card Code');\n  return missing;\n}\n\nfunction buildReply(missing) {\n  // Short, 2-line prompts to avoid loops\n  if (missing.length === 1 && missing[0] === 'Scratch Card Code') {\n    return \"Please send your 8-character alphanumeric Scratch Card Code (e.g., AB12CD34).\\n\\n(Type 'RESET' to start over.)\";\n  }\n  if (missing.length === 1 && missing[0] === 'Full Name') {\n    return \"Please send your Full Name.\\n\\n(Type 'RESET' to start over.)\";\n  }\n  if (missing.length === 1 && missing[0] === 'State & City') {\n    return \"Please send your State & City (e.g., Rivers, Port Harcourt).\\n\\n(Type 'RESET' to start over.)\";\n  }\n  // Multiple fields missing\n  return \"Please send your Full Name, State & City (e.g., Rivers, Port Harcourt), and your 8-character alphanumeric Scratch Card Code (e.g., AB12CD34).\\n\\n(Type 'RESET' to start over.)\";\n}\n\nconst results = [];\n\nfor (const item of items) {\n  const senderWaId = item.json.senderWaId || item.json.sender || item.json.from || '';\n  const rawOutput = item.json.output;\n  const userText = item.json.text || item.json.message || '';\n\n  // Start with AI output if present\n  const ai = safeParseJSON(rawOutput) || {};\n  const form = {\n    fullName: ai['Full Name'] ? String(ai['Full Name']).trim() : '',\n    stateCity: ai['State & City'] ? String(ai['State & City']).trim() : '',\n    code: ai['Scratch Card Code'] ? String(ai['Scratch Card Code']).trim() : '',\n  };\n\n  // Keep previously valid values; only clear code if it exists and fails strict validation\n  if (form.fullName) form.fullName = form.fullName.trim();\n  if (form.stateCity) form.stateCity = form.stateCity.trim();\n  if (form.code && !isStrictCode(form.code)) form.code = '';\n\n  // Merge in any new info from the latest free text (fills only missing fields, preserves casing)\n  extractBestFromText(userText, form);\n\n  // Final validation & completeness\n  const missing = computeMissing(form);\n  const ready = missing.length === 0;\n\n  let reply = '';\n  if (!ready) {\n    reply = buildReply(missing);\n  }\n\n  results.push({\n    json: {\n      senderWaId,\n      reply,\n      ready,\n      fullName: form.fullName || '',\n      stateCity: form.stateCity || '',\n      code: form.code || '',\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        560
+      ],
+      "id": "8c16e8dc-d792-40cd-be25-caf1a77f4b74",
+      "name": "Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7dc90b4-bab4-48ea-ae82-ef48d67831c9",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        592
+      ],
+      "id": "bc07bdd0-cb0b-4b72-845c-8a6f644a73e6",
+      "name": "Is valid text"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f50d76bb-7b60-49cf-9600-9375e9ddc760",
+              "leftValue": "={{ $json.ready }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        560
+      ],
+      "id": "bd8ece26-7233-4b2a-b679-84c207c11a03",
+      "name": "Is info completed",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1a7rWm5EWvaTZkt97vbu6wqESPb-EO_4IqYnJmacqhug/edit?gid=2081599863#gid=2081599863",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xA4L36d-EicUmqlsTw8SgfptHzMqjd7m4IEsUALFY10/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Contact",
+              "lookupValue": "={{ $json.contacts[0].wa_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -256,
+        128
+      ],
+      "id": "e2102da4-1401-4760-83b9-0816da7e9c68",
+      "name": "Already registered",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input fields expected here:\n// - senderWaId (string)\n// - fullName, stateCity, code (strings)\n// - prevTimestamps (array of \"dd-MM-yyyy HH:mm:ss\" strings in IST), may be undefined\n\nconst waid = String($json.Contact || '');\nconst prev = Array.isArray($json.prevTimestamps) ? $json.prevTimestamps : [];\n\n// Parse \"dd-MM-yyyy HH:mm:ss\" as IST (+05:30)\nfunction parseIST(ts) {\n  if (!ts || typeof ts !== 'string') return null;\n  const [datePart, timePart] = ts.trim().split(' ');\n  if (!datePart || !timePart) return null;\n  const [dd, MM, yyyy] = datePart.split('-').map(n => parseInt(n, 10));\n  const [HH, mm, ss] = timePart.split(':').map(n => parseInt(n, 10));\n  if (!yyyy || !MM || !dd) return null;\n  const iso = `${yyyy}-${String(MM).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${String(HH||0).padStart(2,'0')}:${String(mm||0).padStart(2,'0')}:${String(ss||0).padStart(2,'0')}+05:30`;\n  const d = new Date(iso);\n  return isNaN(d.getTime()) ? null : d;\n}\n\nconst now = new Date();                          // UTC now\nconst boundary = new Date(now.getTime() - 15*24*60*60*1000); // 15 days ago (UTC)\n\n// Scan previous timestamps; track newest\nlet recent = false;\nlet newest = null;\n\nfor (const ts of prev) {\n  const d = parseIST(ts);\n  if (!d) continue;\n  if (!newest || d > newest) newest = d;\n  if (d >= boundary) recent = true;\n}\n\n// Helper to format IST for the message\nfunction fmtIST(d) {\n  if (!d) return '';\n  // add +05:30 offset to display as IST\n  const ms = d.getTime() + (5.5 * 60 * 60 * 1000);\n  const ist = new Date(ms);\n  const pad = (n) => String(n).padStart(2,'0');\n  const yyyy = ist.getUTCFullYear();\n  const MM   = pad(ist.getUTCMonth()+1);\n  const dd   = pad(ist.getUTCDate());\n  const HH   = pad(ist.getUTCHours());\n  const mm   = pad(ist.getUTCMinutes());\n  const ss   = pad(ist.getUTCSeconds());\n  return `${dd}-${MM}-${yyyy} ${HH}:${mm}:${ss}`;\n}\n\nif (recent) {\n  // Block the append; tell user\n  return {\n    block: true,\n    senderWaId: waid,\n    reply: `⚠️ You are already registered.\\nLast registration: ${fmtIST(newest)}.\\nPlease try again after 15 days.`\n  };\n}\n\n// Not recent → allow append; pass through your fields for Sheets + success message later\nreturn {\n  block: false,\n  senderWaId: waid,\n  fullName: $json.fullName || '',\n  stateCity: $json.stateCity || '',\n  code: $json.code || ''\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        112
+      ],
+      "id": "19f022d6-a0e8-4170-b818-976978bb8f3c",
+      "name": "Dedup 15 days"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3d881e7-7353-419a-b1aa-e2e6f96afcbf",
+              "leftValue": "={{ !!$json.block }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        112
+      ],
+      "id": "a5e3d1ce-7792-4649-a433-7a5a22a31313",
+      "name": "IF not registered"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $json.senderWaId }}",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        752,
+        0
+      ],
+      "id": "9fdd76ae-8031-4c9b-851f-ee02da928d4d",
+      "name": "Already Registered",
+      "webhookId": "6fa2c5db-e398-4cf4-b92c-28a9a4c86edd"
+    },
+    {
+      "parameters": {
+        "jsCode": "// items = rows returned by Google Sheets \"Lookup\" (0..N)\n// We’ll collect the timestamp column values into a single array.\n//\n// IMPORTANT: Replace the field names below to match your sheet exactly.\n// Try \"TimeStamp\" first; if you use \"Timestamp\" change it accordingly.\n\nconst prev = items\n  .map(i => {\n    const j = i.json || {};\n    // Support both common header spellings\n    const ts = j.TimeStamp ?? j.Timestamp ?? j['Time Stamp'] ?? '';\n    return String(ts).trim();\n  })\n  .filter(Boolean);\n\nreturn [{ prevTimestamps: prev }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        240
+      ],
+      "id": "c3fe9c9b-6217-4e73-853c-0ca04856b024",
+      "name": "Aggregate WAID Timestamps"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0038d23e-31ae-4f9b-9af1-a0a3300a07c6",
+              "name": "senderWaId",
+              "value": "={{ $('Output Parser').item.json.senderWaId }}",
+              "type": "string"
+            },
+            {
+              "id": "743562fe-f545-4f7e-9ab6-46ca7425e767",
+              "name": "ready",
+              "value": "={{ $('Output Parser').item.json.ready }}",
+              "type": "boolean"
+            },
+            {
+              "id": "c49f5e1c-50cf-47b2-b732-ec9b1fb385fb",
+              "name": "fullName",
+              "value": "={{ $('Output Parser').item.json.fullName }}",
+              "type": "string"
+            },
+            {
+              "id": "077bc6e2-a8ab-4d66-830a-44b075f9c94b",
+              "name": "stateCity",
+              "value": "={{ $('Output Parser').item.json.stateCity }}",
+              "type": "string"
+            },
+            {
+              "id": "27fa68af-d636-4b80-ae92-0aa2714d0c2f",
+              "name": "code",
+              "value": "={{ $('Output Parser').item.json.code }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3568,
+        464
+      ],
+      "id": "2f5ace25-c36f-4a7e-8c16-436a9a7a329b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        224,
+        112
+      ],
+      "id": "877ee2e8-54c4-4d65-ae90-2c54118a5cc6",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $json.senderWaId }}",
+        "textBody": "={{\"Sorry! This is an invalid text.\"}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        752
+      ],
+      "id": "0440ba53-e12d-44c2-8e75-0a703ac1bd00",
+      "name": "Send message for invalid text",
+      "webhookId": "2dd6be63-fdb5-421a-9cb9-fe320156ba0d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1a7rWm5EWvaTZkt97vbu6wqESPb-EO_4IqYnJmacqhug/edit?gid=2081599863#gid=2081599863",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1700856815,
+          "mode": "list",
+          "cachedResultName": "Scratch codes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xA4L36d-EicUmqlsTw8SgfptHzMqjd7m4IEsUALFY10/edit#gid=1700856815"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ScratchCode",
+              "lookupValue": "={{ $json.code }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2576,
+        400
+      ],
+      "id": "da0edb72-42a2-4ed9-bada-ae9fc6311c74",
+      "name": "Get scratch codes",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $('Output Parser').item.json.senderWaId }}",
+        "textBody": "={{\"Sorry! This is an invalid scratch code.\"}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        3264,
+        224
+      ],
+      "id": "ebac6b47-ac7f-46a6-b366-9afb09c37ee6",
+      "name": "Invalid scratch code text",
+      "webhookId": "2dd6be63-fdb5-421a-9cb9-fe320156ba0d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc90017e-fb8b-4f83-a385-1c731ec6bea8",
+              "name": "Contact",
+              "value": "={{ $json.Contact }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6ec2cce0-4aa2-47f4-8313-f3da1a64225c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "089316c3-a62c-4790-b67c-aa45d655fda0",
+              "leftValue": "={{ $json.row_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2736,
+        400
+      ],
+      "id": "52b4eeb1-feca-4fd8-9147-1a53b1e34019",
+      "name": "Check correct scratch card code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0038d23e-31ae-4f9b-9af1-a0a3300a07c6",
+              "name": "senderWaId",
+              "value": "={{ $('Output Parser').item.json.senderWaId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2736,
+        208
+      ],
+      "id": "654e0974-d515-4aff-9644-4e53f3c87005",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3040,
+        224
+      ],
+      "id": "ebb4a546-ecf7-4d76-a776-838bddea2481",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "089316c3-a62c-4790-b67c-aa45d655fda0",
+              "leftValue": "={{ $json.row_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3344,
+        528
+      ],
+      "id": "e63db074-8e36-462a-888a-5790aa6134e6",
+      "name": "Check correct scratch card code1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1a7rWm5EWvaTZkt97vbu6wqESPb-EO_4IqYnJmacqhug/edit?gid=2081599863#gid=2081599863",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xA4L36d-EicUmqlsTw8SgfptHzMqjd7m4IEsUALFY10/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Scratch Card Code",
+              "lookupValue": "={{ $json.code }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3200,
+        528
+      ],
+      "id": "fb06f921-4db1-44aa-88bc-e86f3ad61965",
+      "name": "Get scratch codes from registered",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $('Output Parser').item.json.senderWaId }}",
+        "textBody": "={{\"Sorry! This code is already registered.\"}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        640
+      ],
+      "id": "115d520d-61e7-4c60-b745-7b27afd1cf79",
+      "name": "Invalid scratch code text1",
+      "webhookId": "2dd6be63-fdb5-421a-9cb9-fe320156ba0d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9a53496-c773-4036-93e9-37359481d13d",
+              "name": "code",
+              "value": "={{ $json.code }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2448,
+        864
+      ],
+      "id": "35fe34ae-d811-433e-a9fd-3e3086d2d89f",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3056,
+        528
+      ],
+      "id": "876328f8-56ae-44bf-a630-5c8e66b98ae6",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1a7rWm5EWvaTZkt97vbu6wqESPb-EO_4IqYnJmacqhug/edit?gid=2081599863#gid=2081599863",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xA4L36d-EicUmqlsTw8SgfptHzMqjd7m4IEsUALFY10/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Contact",
+              "lookupValue": "={{ $json.contacts[0].wa_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -320,
+        592
+      ],
+      "id": "f8a8bf76-b6a0-40b5-a2a4-d5dad2ac59b7",
+      "name": "Already registered1",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input fields expected here:\n// - senderWaId (string)\n// - fullName, stateCity, code (strings)\n// - prevTimestamps (array of \"dd-MM-yyyy HH:mm:ss\" strings in IST), may be undefined\n\nconst waid = String($json.Contact || '');\nconst prev = Array.isArray($json.prevTimestamps) ? $json.prevTimestamps : [];\n\n// Parse \"dd-MM-yyyy HH:mm:ss\" as IST (+05:30)\nfunction parseIST(ts) {\n  if (!ts || typeof ts !== 'string') return null;\n  const [datePart, timePart] = ts.trim().split(' ');\n  if (!datePart || !timePart) return null;\n  const [dd, MM, yyyy] = datePart.split('-').map(n => parseInt(n, 10));\n  const [HH, mm, ss] = timePart.split(':').map(n => parseInt(n, 10));\n  if (!yyyy || !MM || !dd) return null;\n  const iso = `${yyyy}-${String(MM).padStart(2,'0')}-${String(dd).padStart(2,'0')}T${String(HH||0).padStart(2,'0')}:${String(mm||0).padStart(2,'0')}:${String(ss||0).padStart(2,'0')}+05:30`;\n  const d = new Date(iso);\n  return isNaN(d.getTime()) ? null : d;\n}\n\nconst now = new Date();                          // UTC now\nconst boundary = new Date(now.getTime() - 15*24*60*60*1000); // 15 days ago (UTC)\n\n// Scan previous timestamps; track newest\nlet recent = false;\nlet newest = null;\n\nfor (const ts of prev) {\n  const d = parseIST(ts);\n  if (!d) continue;\n  if (!newest || d > newest) newest = d;\n  if (d >= boundary) recent = true;\n}\n\n// Helper to format IST for the message\nfunction fmtIST(d) {\n  if (!d) return '';\n  // add +05:30 offset to display as IST\n  const ms = d.getTime() + (5.5 * 60 * 60 * 1000);\n  const ist = new Date(ms);\n  const pad = (n) => String(n).padStart(2,'0');\n  const yyyy = ist.getUTCFullYear();\n  const MM   = pad(ist.getUTCMonth()+1);\n  const dd   = pad(ist.getUTCDate());\n  const HH   = pad(ist.getUTCHours());\n  const mm   = pad(ist.getUTCMinutes());\n  const ss   = pad(ist.getUTCSeconds());\n  return `${dd}-${MM}-${yyyy} ${HH}:${mm}:${ss}`;\n}\n\nif (recent) {\n  // Block the append; tell user\n  return {\n    block: true,\n    senderWaId: waid,\n    reply: `⚠️ You are already registered.\\nLast registration: ${fmtIST(newest)}.\\nPlease try again after 15 days.`\n  };\n}\n\n// Not recent → allow append; pass through your fields for Sheets + success message later\nreturn {\n  block: false,\n  senderWaId: waid,\n  fullName: $json.fullName || '',\n  stateCity: $json.stateCity || '',\n  code: $json.code || ''\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        576
+      ],
+      "id": "714f4543-e564-4ea6-9ca4-1783e97902ed",
+      "name": "Dedup 15 days1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3d881e7-7353-419a-b1aa-e2e6f96afcbf",
+              "leftValue": "={{ !!$json.block }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        576
+      ],
+      "id": "754708ff-78b3-44ff-8875-7dbd9861e0fb",
+      "name": "IF not registered1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "767480553104548",
+        "recipientPhoneNumber": "={{ $json.senderWaId }}",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        704,
+        416
+      ],
+      "id": "b64ace97-d650-48b0-a6f5-9afaa16b41c6",
+      "name": "Already Registered1",
+      "webhookId": "6fa2c5db-e398-4cf4-b92c-28a9a4c86edd"
+    },
+    {
+      "parameters": {
+        "jsCode": "// items = rows returned by Google Sheets \"Lookup\" (0..N)\n// We’ll collect the timestamp column values into a single array.\n//\n// IMPORTANT: Replace the field names below to match your sheet exactly.\n// Try \"TimeStamp\" first; if you use \"Timestamp\" change it accordingly.\n\nconst prev = items\n  .map(i => {\n    const j = i.json || {};\n    // Support both common header spellings\n    const ts = j.TimeStamp ?? j.Timestamp ?? j['Time Stamp'] ?? '';\n    return String(ts).trim();\n  })\n  .filter(Boolean);\n\nreturn [{ prevTimestamps: prev }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        704
+      ],
+      "id": "07c67937-61ca-4a60-b083-499096a21496",
+      "name": "Aggregate WAID Timestamps1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        160,
+        576
+      ],
+      "id": "55255a02-7528-4393-b1d3-8b530f74e2c7",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc90017e-fb8b-4f83-a385-1c731ec6bea8",
+              "name": "Contact",
+              "value": "={{ $json.Contact }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        448
+      ],
+      "id": "d0910ca7-e6b9-4330-9164-92ab6693d04e",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        800,
+        592
+      ],
+      "id": "99f0252d-fc63-46c0-b7e6-f6df2d805929",
+      "name": "Merge5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Already registered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already registered1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Is valid text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Output Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer DB": {
+      "main": [
+        [
+          {
+            "node": "Confirmation Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Parser": {
+      "main": [
+        [
+          {
+            "node": "Is info completed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is valid text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Send message for invalid text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is info completed": {
+      "main": [
+        [
+          {
+            "node": "Get scratch codes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send message for missing info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already registered": {
+      "main": [
+        [
+          {
+            "node": "Aggregate WAID Timestamps",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup 15 days": {
+      "main": [
+        [
+          {
+            "node": "IF not registered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF not registered": {
+      "main": [
+        [
+          {
+            "node": "Already Registered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate WAID Timestamps": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Customer DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Dedup 15 days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get scratch codes": {
+      "main": [
+        [
+          {
+            "node": "Check correct scratch card code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check correct scratch card code": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Invalid scratch code text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get scratch codes from registered": {
+      "main": [
+        [
+          {
+            "node": "Check correct scratch card code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check correct scratch card code1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid scratch code text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Get scratch codes from registered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already registered1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate WAID Timestamps1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup 15 days1": {
+      "main": [
+        [
+          {
+            "node": "IF not registered1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF not registered1": {
+      "main": [
+        [
+          {
+            "node": "Already Registered1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate WAID Timestamps1": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Dedup 15 days1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge5": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b663865a-e8aa-4d46-a239-90043c3c20de",
+  "meta": {
+    "instanceId": "92b860e191f07b39b4a7c34cccb859e830e75b0ee3a66ddf439b6735a1673cc9"
+  },
+  "nodeGroups": [],
+  "id": "tB6D27rYi64jcNEm",
+  "tags": []
+}
