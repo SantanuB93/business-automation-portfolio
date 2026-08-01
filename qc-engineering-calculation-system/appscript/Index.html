@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+
+  <?!= include('Style'); ?>
+
+</head>
+
+<body>
+
+<div class="page">
+
+    <header class="topbar">
+
+        <div class="logo-area">
+
+            <div class="logo-box">
+
+                QC
+
+            </div>
+
+            <div>
+
+                <div class="title">
+
+                    QC ENGINEERING CALCULATION SYSTEM
+
+                </div>
+
+                <div class="subtitle">
+
+                    Quality Control Department
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="version">
+
+            Version 1.0
+
+        </div>
+
+    </header>
+
+    <div class="toolbar">
+
+    <button id="btnNew" class="toolbar-btn">
+        🆕 New
+    </button>
+
+    <button id="btnPrint" class="toolbar-btn" disabled>
+        🖨 Print
+    </button>
+
+    <button id="btnCopy" class="toolbar-btn" disabled>
+        📋 Copy Result
+    </button>
+
+    <button id="btnAbout" class="toolbar-btn">
+        ℹ About
+    </button>
+
+    </div>
+
+    <div class="content-card">
+
+        <div class="section-title">
+
+            Calculation Selection
+
+        </div>
+
+        <div class="form-grid">
+
+            <label>
+
+                Item
+
+            </label>
+
+            <select id="ddlItem"> </select>
+
+            <label>
+
+                Calculation Type
+
+            </label>
+
+            <select id="ddlCalculation"> </select>         
+            
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h3>Input Parameters</h3>
+
+        <div id="inputContainer">
+          <div class="placeholder">
+               Select Item and Calculation Type
+           </div>
+        </div>
+
+    </div>
+
+    <div class="card">
+
+      <h3>Calculated Values</h3>
+
+      <div id="calculatedContainer">
+        <div class="placeholder">
+            No calculation performed.
+        </div>
+    </div>
+
+    </div>
+
+<div class="card">
+
+    <h3>Final Result</h3>
+
+    <div id="resultContainer">
+        <div class="placeholder">
+            No calculation performed.
+        </div>
+    </div>
+
+</div>
+
+
+
+
+
+    <div class="button-panel">
+
+        <button id="btnCalculate" class="btn-primary" disabled>
+         
+           Calculate
+
+        </button>
+
+        <button id="btnReset" class="btn-secondary">
+
+          Reset
+
+        </button>
+
+    </div>
+
+
+
+    
+
+        
+
+  </div>
+
+</div>
+
+<div id="loadingOverlay">
+
+    <div class="loader"></div>
+
+    <div class="loadingText">
+
+        Processing...
+
+    </div>
+
+</div>
+
+<?!= include('Script'); ?>
+
+<div class="status-bar">
+
+    <span id="statusText">
+        Status : Ready
+    </span>
+
+    <span id="statusTime"></span>
+
+</div>
+
+</body>
+
+</html>
