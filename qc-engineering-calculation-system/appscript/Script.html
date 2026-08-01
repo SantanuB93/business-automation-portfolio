@@ -1,0 +1,733 @@
+<script>
+
+//==================================================
+// Application State
+//==================================================
+
+const APP = {
+
+    data : null,
+
+    itemMap : {},
+
+    calculationMap : {},
+
+    parameterMap : {}
+
+};
+
+//==================================================
+// Cached Controls
+//==================================================
+
+const UI = {};
+
+//==================================================
+// Startup
+//==================================================
+
+window.addEventListener("load", initializeApp);
+
+//==================================================
+
+function initializeApp(){
+
+    cacheControls();
+
+    bindEvents();
+
+    showLoading();
+
+    google.script.run
+        .withSuccessHandler(loadApplication)
+        .withFailureHandler(showError)
+        .getApplicationData();
+
+}
+
+//==================================================
+
+function cacheControls(){
+
+    UI.ddlItem = document.getElementById("ddlItem");
+
+    UI.ddlCalculation = document.getElementById("ddlCalculation");
+
+    UI.inputContainer = document.getElementById("inputContainer");
+
+    UI.calculatedContainer = document.getElementById("calculatedContainer");
+
+    UI.resultContainer = document.getElementById("resultContainer");
+
+    UI.btnCalculate = document.getElementById("btnCalculate");
+
+    UI.btnReset = document.getElementById("btnReset");
+
+    UI.btnNew = document.getElementById("btnNew");
+
+    UI.btnPrint = document.getElementById("btnPrint");
+
+    UI.btnCopy = document.getElementById("btnCopy");
+
+    UI.btnAbout = document.getElementById("btnAbout");
+
+    UI.loading = document.getElementById("loadingOverlay");
+
+    UI.statusText = document.getElementById("statusText");
+
+    UI.statusTime = document.getElementById("statusTime");
+
+}
+
+//==================================================
+
+function bindEvents(){
+
+    UI.ddlItem.addEventListener("change", itemChanged);
+
+    UI.ddlCalculation.addEventListener("change", calculationChanged);
+
+    UI.btnCalculate.addEventListener("click", calculate);
+
+    UI.btnReset.addEventListener("click", resetForm);
+
+    UI.btnAbout.addEventListener("click", showAbout);
+
+    UI.btnCopy.addEventListener("click", copyResult);
+
+    UI.btnPrint.addEventListener("click", printResult);
+
+    UI.btnNew.addEventListener("click", newCalculation);
+
+}
+
+//==================================================
+
+function loadApplication(data){
+
+    APP.data = data;
+
+    buildLookupTables();
+
+    populateItems();
+
+    hideLoading();
+
+}
+
+//==================================================
+
+function buildLookupTables(){
+
+    APP.data.calculations.forEach(c=>{
+
+        if(!APP.calculationMap[c.ItemID])
+            APP.calculationMap[c.ItemID]=[];
+
+        APP.calculationMap[c.ItemID].push(c);
+
+    });
+
+    APP.data.parameters.forEach(p=>{
+
+        if(!APP.parameterMap[p.CalculationID])
+            APP.parameterMap[p.CalculationID]=[];
+
+        APP.parameterMap[p.CalculationID].push(p);
+
+    });
+
+}
+
+//==================================================
+
+function populateItems(){
+
+    UI.ddlItem.innerHTML="";
+
+    addOption(UI.ddlItem,"","-- Select Item --");
+
+    APP.data.items.forEach(item=>{
+
+        addOption(
+
+            UI.ddlItem,
+
+            item.ItemID,
+
+            item.ItemName
+
+        );
+
+    });
+
+}
+
+//==================================================
+
+function itemChanged(){
+
+    const itemID=Number(UI.ddlItem.value);
+
+    UI.ddlCalculation.innerHTML="";
+
+    clearParameters();
+
+    clearResults();
+
+    disableCalculate();
+
+    addOption(
+
+        UI.ddlCalculation,
+
+        "",
+
+        "-- Select Calculation --"
+
+    );
+
+    if(!itemID) return;
+
+    const list=APP.calculationMap[itemID] || [];
+
+    list.forEach(calc=>{
+
+        addOption(
+
+            UI.ddlCalculation,
+
+            calc.CalculationID,
+
+            calc.CalculationName
+
+        );
+
+    });
+
+}
+
+//==================================================
+
+function calculationChanged(){
+
+    clearParameters();
+
+    clearResults();
+
+    disableCalculate();
+
+    const calculationID=Number(UI.ddlCalculation.value);
+
+    if(!calculationID) return;
+
+    const parameters=
+
+        APP.parameterMap[calculationID] || [];
+
+    generateParameterControls(parameters);
+
+}
+
+//==================================================
+
+function generateParameterControls(parameters){
+
+    if(parameters.length===0){
+
+        clearParameters();
+
+        return;
+
+    }
+
+    parameters.sort((a,b)=>a.Sequence-b.Sequence);
+
+    let inputHtml = "";
+
+    let calcHtml = "";
+
+    let outputHtml = "";
+
+    parameters.forEach(function(p){
+
+        switch(p.ParameterType){
+
+            case "Input":
+
+                inputHtml += createInputControl(p);
+
+                break;
+
+            case "Calculated":
+
+                calcHtml += createOutputControl(p);
+
+                break;
+
+            case "Output":
+
+                outputHtml += createOutputControl(p,true);
+
+                break;
+
+        }
+
+    });
+
+    UI.inputContainer.innerHTML = inputHtml || '<div class="placeholder">No Input Parameters</div>';
+
+    UI.calculatedContainer.innerHTML = calcHtml || '<div class="placeholder">No Calculated Values</div>';
+
+    UI.resultContainer.innerHTML = outputHtml || '<div class="placeholder">No Output</div>';
+
+    enableCalculate();
+
+    setStatus("Ready");
+
+}
+
+//==================================================
+
+function addOption(control,value,text){
+
+    const option=document.createElement("option");
+
+    option.value=value;
+
+    option.text=text;
+
+    control.appendChild(option);
+
+}
+
+//==================================================
+
+function clearParameters(){
+
+    UI.inputContainer.innerHTML =
+        '<div class="placeholder">Select Item and Calculation Type</div>';
+
+    UI.calculatedContainer.innerHTML =
+        '<div class="placeholder">No calculation performed.</div>';
+
+    UI.resultContainer.innerHTML =
+        '<div class="placeholder">No calculation performed.</div>';
+
+}
+
+//==================================================
+
+function clearResults(){
+
+    UI.calculatedContainer.innerHTML =
+        '<div class="placeholder">No calculation performed.</div>';
+
+    UI.resultContainer.innerHTML =
+        '<div class="placeholder">No calculation performed.</div>';
+
+}
+
+//==================================================
+
+function enableCalculate(){
+
+    UI.btnCalculate.disabled=false;
+
+}
+
+//==================================================
+
+function disableCalculate(){
+
+    UI.btnCalculate.disabled=true;
+
+}
+
+//==================================================
+
+//==================================================
+// Reset Current Calculation
+//==================================================
+
+function resetForm(){
+
+    // Clear all input boxes
+    document.querySelectorAll(".parameter-input")
+        .forEach(function(input){
+
+            input.value = "";
+
+        });
+
+    // Clear calculated values
+    document.querySelectorAll(".parameter-value")
+        .forEach(function(output){
+
+            output.innerHTML = "-";
+
+        });
+
+    // Disable Print & Copy
+    UI.btnPrint.disabled = true;
+    UI.btnCopy.disabled = true;
+
+    setStatus("Current calculation reset.");
+    const firstInput = document.querySelector(".parameter-input");
+
+    if(firstInput){
+
+      firstInput.focus();
+
+    }
+
+}
+
+//==================================================
+
+function showLoading(){
+
+    UI.loading.style.display="flex";
+
+}
+
+//==================================================
+
+function hideLoading(){
+
+    UI.loading.style.display="none";
+
+}
+
+//==================================================
+
+function showError(error){
+
+    hideLoading();
+
+    alert(error.message || error);
+
+    setStatus("Error");
+
+
+}
+
+//==================================================
+
+function createInputControl(p){
+
+    return `
+
+        <div class="parameter-row">
+
+            <div class="parameter-label">
+
+                ${p.Name}
+
+            </div>
+
+            <input
+
+                type="text"
+
+                class="parameter-input"
+
+                autocomplete="off"
+
+                spellcheck="false"
+
+                inputmode="decimal"
+
+                data-alias="${p.Alias}"
+
+                data-decimal="${p.DecimalPlaces}"
+
+            >
+
+            <div class="parameter-unit">
+
+                ${p.Unit || ""}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+//==================================================
+
+function createOutputControl(p,isResult=false){
+
+    return `
+
+        <div class="parameter-row">
+
+            <div class="parameter-label">
+
+                ${p.Name}
+
+            </div>
+
+            <div
+
+                class="${isResult ? 'parameter-value result-value' : 'parameter-value'}"
+
+                id="result_${p.Alias}"
+
+                data-decimal="${p.DecimalPlaces}"
+
+            >
+
+                -
+
+            </div>
+
+            <div class="parameter-unit">
+
+                ${p.Unit || ""}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+//==================================================
+
+function collectInputValues(){
+
+    const values = {};
+
+    const inputs = document.querySelectorAll(".parameter-input");
+
+    inputs.forEach(function(input){
+
+        const alias = input.dataset.alias;
+
+        const value = input.value.trim();
+
+        if(value === ""){
+
+            throw new Error(
+                "Please enter value for all input parameters."
+            );
+
+        }
+
+        const number = Number(value);
+
+        if(isNaN(number)){
+
+            throw new Error(
+                "Invalid numeric value entered."
+            );
+
+        }
+
+        values[alias] = number;
+
+    });
+
+    return values;
+
+}
+
+//==================================================
+
+function showResults(results){
+
+    Object.keys(results).forEach(function(alias){
+
+        const control = document.getElementById(
+            "result_" + alias
+        );
+
+        if(!control)
+            return;
+
+        const decimals = Number(
+            control.dataset.decimal || 2
+        );
+
+        control.innerHTML = Number(
+            results[alias]
+        ).toFixed(decimals);
+
+    });
+
+}
+
+//==================================================
+
+function calculate(){
+
+    try{
+
+        const inputValues = collectInputValues();
+
+        showLoading();
+
+        setStatus("Calculating...");
+
+        google.script.run
+
+            .withSuccessHandler(function(results){
+
+                hideLoading();
+
+                showResults(results);
+
+                UI.btnPrint.disabled = false;
+
+                UI.btnCopy.disabled = false;
+
+                setStatus("Calculation Completed");
+
+            })
+
+            .withFailureHandler(function(error){
+
+                hideLoading();
+
+                alert(error.message || error);
+
+                setStatus("Calculation Failed");
+
+            })
+
+            .calculateFromUI(
+
+                Number(UI.ddlCalculation.value),
+
+                inputValues
+
+            );
+
+    }
+
+    catch(err){
+
+        alert(err.message);
+
+    }
+
+}
+
+//==================================================
+
+function setStatus(message){
+
+    UI.statusText.innerHTML = "Status : " + message;
+
+    UI.statusTime.innerHTML = new Date().toLocaleString();
+
+}
+
+//==================================================
+
+//==================================================
+// About
+//==================================================
+
+function showAbout(){
+
+    alert(
+
+`QC ENGINEERING CALCULATION SYSTEM
+
+Version : 1.0
+
+Purpose
+----------------------------------------
+This application performs Quality Control
+engineering calculations using approved
+calculation formulas stored in the master
+database.
+
+User Guide
+----------------------------------------
+1. Select Item.
+2. Select Calculation Type.
+3. Enter all required input values.
+4. Click Calculate.
+5. View calculated values and final result.
+6. Use Copy to copy the final result.
+7. Use Print to print the calculation.
+
+Developed for
+Quality Control Department`
+
+    );
+
+}
+//==================================================
+
+//==================================================
+// Copy Result
+//==================================================
+
+function copyResult(){
+
+    let text = "";
+
+    document
+        .querySelectorAll(".result-value")
+        .forEach(function(control){
+
+            text += control.innerText + "\n";
+
+        });
+
+    navigator.clipboard.writeText(text.trim());
+
+    setStatus("Result copied to clipboard.");
+
+}
+
+//==================================================
+// Print
+//==================================================
+
+function printResult(){
+
+    window.print();
+
+}
+
+//==================================================
+// New Calculation
+//==================================================
+
+function newCalculation(){
+
+    // Reset Item
+    UI.ddlItem.selectedIndex = 0;
+
+    // Reset Calculation dropdown
+    UI.ddlCalculation.innerHTML = "";
+
+    addOption(
+        UI.ddlCalculation,
+        "",
+        "-- Select Calculation --"
+    );
+
+    // Remove parameter controls
+    clearParameters();
+
+    // Remove results
+    clearResults();
+
+    // Disable buttons
+    UI.btnCalculate.disabled = true;
+    UI.btnPrint.disabled = true;
+    UI.btnCopy.disabled = true;
+
+    setStatus("Ready for new calculation.");
+
+}
+</script>
