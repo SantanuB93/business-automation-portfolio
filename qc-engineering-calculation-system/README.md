@@ -114,9 +114,11 @@ UTS
 
 ## Screenshots
 
-(Home)
+<img width="1057" height="721" alt="Home" src="https://github.com/user-attachments/assets/7431f4df-39fa-48d9-a97c-3f1442e72a6a" />
 
-(Add screenshots here)
+
+<img width="1062" height="712" alt="conductivity" src="https://github.com/user-attachments/assets/9dfd4917-e570-4ce0-82cc-889bbe806815" />
+
 
 ---
 
