@@ -203,55 +203,57 @@ function normalizeFormula(formula){
 function convertFunctions(formula){
 
     formula = formula.replace(
-        /POWER\s*\(/gi,
+        /(?<!Math\.)\bLOG\s*\(/gi,
+        "Math.log10("
+    );
+
+    formula = formula.replace(
+        /(?<!Math\.)\bLN\s*\(/gi,
+        "Math.log("
+    );
+
+  
+    formula = formula.replace(
+        /(?<!Math\.)\bPOWER\s*\(/gi,
         "Math.pow("
     );
 
     formula = formula.replace(
-        /SQRT\s*\(/gi,
+        /(?<!Math\.)\bSQRT\s*\(/gi,
         "Math.sqrt("
     );
 
     formula = formula.replace(
-        /ABS\s*\(/gi,
+        /(?<!Math\.)\bABS\s*\(/gi,
         "Math.abs("
     );
 
     formula = formula.replace(
-        /ROUND\s*\(/gi,
+        /(?<!Math\.)\bROUND\s*\(/gi,
         "Math.round("
     );
 
+
     formula = formula.replace(
-        /SIN\s*\(/gi,
-        "Math.sin("
+        /(?<!Math\.)\bSIN\s*\(([^()]*)\)/gi,
+        "Math.sin(($1)*Math.PI/180)"
     );
 
     formula = formula.replace(
-        /COS\s*\(/gi,
-        "Math.cos("
+        /(?<!Math\.)\bCOS\s*\(([^()]*)\)/gi,
+        "Math.cos(($1)*Math.PI/180)"
     );
 
     formula = formula.replace(
-        /TAN\s*\(/gi,
-        "Math.tan("
+        /(?<!Math\.)\bTAN\s*\(([^()]*)\)/gi,
+        "Math.tan(($1)*Math.PI/180)"
     );
-
     return formula;
 
 }
 
 /*
-|--------------------------------------------------------------------------
-| ^
-|--------------------------------------------------------------------------
-|
-| d^2
-|
-| becomes
-|
-| Math.pow(d,2)
-|
+|d^2 becomes Math.pow(d,2)
 |--------------------------------------------------------------------------
 */
 
