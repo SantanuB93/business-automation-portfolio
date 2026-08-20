@@ -78,7 +78,14 @@ function captureLocation(){
       '<br><b>Longitude :</b> ' + longitude +
       '<br><b>Accuracy :</b> ' + Math.round(position.coords.accuracy) + ' meters';
 
-  });
+  },
+    function(error) {
+
+    document.getElementById("location").innerHTML =
+      "Unable to capture location. Please allow location access.";
+
+  }
+  );
 
 }
 
