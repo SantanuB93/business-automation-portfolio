@@ -145,7 +145,7 @@ The system then automatically:
         ┌─────────────────┐ ┌───────────────┐ ┌──────────────┐
         │  Google Sheets  │ │ Google Drive  │ │    Gmail     │
         │                 │ │               │ │              │
-        │ Visit Records  │ │ Attachments   │ │ Notification │
+        │ Visit Records   │ │ Attachments   │ │ Notification │
         └─────────────────┘ └───────────────┘ └──────────────┘
 ```
 
