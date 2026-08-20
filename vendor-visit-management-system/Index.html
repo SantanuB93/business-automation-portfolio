@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<?!= include("Style"); ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Customer Visit Entry</h2>
+
+<label>Employee Email</label>
+<input type="text" id="email" readonly>
+
+<label>Date</label>
+<input type="date" id="date">
+
+<label>Place of Visit</label>
+<input id="place">
+
+<label>Customer Visited</label>
+
+<input type="text" id="customer" placeholder="Enter Customer Name">
+
+
+
+<!--<button onclick="addCustomer()">Add Customer</button><br>-->
+
+<label>Purpose</label>
+
+<textarea id="purpose"></textarea>
+
+<label>KM Start</label>
+
+<input type="number" id="kmStart">
+
+<label>KM End</label>
+
+<input type="number" id="kmEnd">
+
+<div id="distance"></div> <br><br>
+
+<label>Attachment</label>
+
+<input type="file" id="files" multiple hidden>
+
+<button type="button" id="chooseFilesBtn" class="fileButton">
+    Choose Files
+</button>
+
+<span id="fileCount" style="margin-left:10px;color:#666;">
+No files selected
+</span>
+
+<div id="preview"></div> <br>
+
+<label>Remarks</label>
+
+<textarea id="remarks" rows="3"></textarea>
+
+<br><br>
+
+<button onclick="captureLocation()">Capture Location</button>
+
+<div id="location"></div>
+<div id="map"></div>
+
+<br>
+
+<button id="submitBtn" onclick="submitForm()">Submit</button>
+
+<div id="statusMessage"></div>
+
+</div>
+
+<?!= include("JavaScript"); ?>
+
+</body>
+
+</html>
