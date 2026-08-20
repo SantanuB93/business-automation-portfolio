@@ -1,0 +1,325 @@
+<script>
+
+let latitude = "";
+let longitude = "";
+let selectedFiles = [];
+
+window.onload = function () {
+
+  document.getElementById("date").value =
+    new Date().toISOString().split("T")[0];
+
+  google.script.run
+    .withSuccessHandler(function(email){
+      document.getElementById("email").value = email;
+    })
+    .getUserEmail();
+
+  document.getElementById("kmEnd").addEventListener("input", function () {
+
+    let start = Number(document.getElementById("kmStart").value);
+    let end = Number(document.getElementById("kmEnd").value);
+
+    if (end >= start) {
+      document.getElementById("distance").innerHTML =
+        "<b>Total Distance :</b> " + (end - start) + " KM";
+    }
+
+  });
+
+ document.getElementById("files").addEventListener("change", function () {
+
+    Array.from(this.files).forEach(function(file){
+        selectedFiles.push(file);
+    });
+
+    this.value = "";
+
+    document.getElementById("fileCount").innerHTML =
+        selectedFiles.length + " file(s) selected";
+
+    refreshPreview();
+
+});
+
+document.getElementById("chooseFilesBtn").addEventListener("click", function () {
+    document.getElementById("files").click();
+});
+
+};
+
+/*function addCustomer(){
+
+  let div = document.getElementById("customerList");
+
+  let input = document.createElement("input");
+
+  input.className = "customer";
+
+  div.appendChild(input);
+
+}*/
+
+function captureLocation(){
+
+  navigator.geolocation.getCurrentPosition(function(position){
+
+    latitude = position.coords.latitude;
+    longitude = position.coords.longitude;
+
+    document.getElementById("location").innerHTML =
+      "Location Captured Successfully";
+
+    document.getElementById("map").innerHTML =
+      '<iframe width="100%" height="300" style="border:0;border-radius:10px" src="https://maps.google.com/maps?q='
+      + latitude + ',' + longitude +
+      '&z=16&output=embed"></iframe><br><br>' +
+      '<b>Latitude :</b> ' + latitude +
+      '<br><b>Longitude :</b> ' + longitude +
+      '<br><b>Accuracy :</b> ' + Math.round(position.coords.accuracy) + ' meters';
+
+  });
+
+}
+
+function refreshPreview(){
+
+    let html = "";
+
+    selectedFiles.forEach(function(file,index){
+
+        html += `
+        <div class="fileRow">
+
+            <div class="fileInfo">
+
+                <i class="bi bi-paperclip fileIcon"></i>
+
+                <span class="fileName">${file.name}</span>
+
+            </div>
+
+            <button
+                type="button"
+                class="removeBtn"
+                onclick="removeFile(${index})"
+                title="Remove Attachment">
+
+                <i class="bi bi-trash3-fill"></i>
+
+            </button>
+
+        </div>
+        `;
+
+    });
+
+    document.getElementById("preview").innerHTML = html;
+
+}
+
+function removeFile(index){
+
+    selectedFiles.splice(index,1);
+
+    if(selectedFiles.length==0){
+
+        document.getElementById("fileCount").innerHTML =
+        "No files selected";
+
+    }else{
+
+        document.getElementById("fileCount").innerHTML =
+        selectedFiles.length + " file(s) selected";
+
+    }
+
+    refreshPreview();
+
+}
+
+
+
+async function submitForm(){
+
+  if(document.getElementById("place").value.trim()==""){
+
+    alert("Please enter Place of Visit.");
+
+    return;
+
+}
+
+if(document.getElementById("customer").value.trim()==""){
+
+    alert("Please enter Customer Name.");
+
+    return;
+
+}
+
+if(document.getElementById("purpose").value.trim()==""){
+
+    alert("Please enter Purpose.");
+
+    return;
+
+}
+
+if(document.getElementById("kmStart").value==""){
+
+    alert("Please enter KM Start.");
+
+    return;
+
+}
+
+if(document.getElementById("kmEnd").value==""){
+
+    alert("Please enter KM End.");
+
+    return;
+
+}
+
+if(latitude==""){
+
+    alert("Please capture GPS location.");
+
+    return;
+
+}
+
+  let files = [];
+
+  const fileInput = document.getElementById("files").files;
+
+  for (let file of selectedFiles){
+
+    const bytes = await toBase64(file);
+
+    files.push({
+      fileName:file.name,
+      mimeType:file.type,
+      bytes:bytes.split(",")[1]
+    });
+
+  }
+
+  /*let customers = [];
+
+  document.querySelectorAll(".customer").forEach(function(x){
+
+    if(x.value!=""){
+      customers.push(x.value);
+    }
+
+  });*/
+
+  let customer = document.getElementById("customer").value;
+
+  let obj = {
+
+    email:document.getElementById("email").value,
+    date:document.getElementById("date").value,
+    place:document.getElementById("place").value,
+    //customers:customers,
+    customers:customer,
+    remarks:document.getElementById("remarks").value,
+    purpose:document.getElementById("purpose").value,
+    kmStart:document.getElementById("kmStart").value,
+    kmEnd:document.getElementById("kmEnd").value,
+    latitude:latitude,
+    longitude:longitude,
+    mapLink:"https://www.google.com/maps?q="+latitude+","+longitude,
+    files:files
+
+  };
+
+  const btn = document.getElementById("submitBtn");
+
+btn.disabled = true;
+
+btn.innerHTML = "Submitting...";
+
+document.getElementById("statusMessage").innerHTML =
+"Uploading attachments and saving visit details...";
+
+google.script.run
+
+.withSuccessHandler(function(msg){
+
+    document.getElementById("statusMessage").innerHTML =
+    "✅ Customer Visit Submitted Successfully";
+
+    btn.innerHTML = "Submitted";
+
+    setTimeout(function(){
+
+    resetForm();
+
+    btn.disabled=false;
+
+    btn.innerHTML="Submit Visit";
+
+    document.getElementById("statusMessage").innerHTML="";
+
+},1500);
+
+})
+
+.withFailureHandler(function(err){
+
+    btn.disabled = false;
+
+    btn.innerHTML = "Submit Visit";
+
+    document.getElementById("statusMessage").innerHTML =
+    "<span style='color:red'>❌ " + err.message + "</span>";
+
+})
+
+.saveData(obj);
+
+}
+
+function toBase64(file){
+
+  return new Promise(function(resolve){
+
+    const reader = new FileReader();
+
+    reader.onload = function(){
+
+      resolve(reader.result);
+
+    };
+
+    reader.readAsDataURL(file);
+
+  });
+
+}
+
+function resetForm(){
+
+    document.getElementById("place").value="";
+    document.getElementById("customer").value="";
+    document.getElementById("purpose").value="";
+    document.getElementById("remarks").value="";
+    document.getElementById("kmStart").value="";
+    document.getElementById("kmEnd").value="";
+    document.getElementById("distance").innerHTML="";
+    document.getElementById("location").innerHTML="";
+    document.getElementById("map").innerHTML="";
+    document.getElementById("preview").innerHTML="";
+    document.getElementById("fileCount").innerHTML="No files selected";
+
+    selectedFiles=[];
+
+    latitude="";
+    longitude="";
+
+}
+
+</script>
